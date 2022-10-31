@@ -3,6 +3,8 @@
 local M = {}
 local add = {}
 local remove = {}
+local ADD = "add"
+local REMOVE = "remove"
 
 local utils = require("classy.utils")
 local ts_utils = require("nvim-treesitter.ts_utils")
@@ -38,7 +40,7 @@ end
 
 -- Place the cursor at the end of the class attribute in a tag.
 -- If the class attribute is not present, then add one.
-M.add_class = function()
+local traverse_tree = function(method)
   local bufnr = vim.api.nvim_get_current_buf()
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
   local cursor_row, cursor_col = unpack(cursor_pos)
@@ -70,6 +72,9 @@ M.add_class = function()
   local tag_name_row = 0
   local tag_name_end_col = 0
 
+  local attr_name_start_col = 0
+  local attr_name_end_col = 0
+
   for id, capture, _ in query:iter_captures(node, bufnr, cursor_row - 1, cursor_row) do
     local tag_name = query.captures[1]
     local attr_name = query.captures[2]
@@ -86,29 +91,51 @@ M.add_class = function()
       tag_name_end_col = capture_end_col
     end
 
+    if name == attr_name then
+      attr_name_start_col = capture_start_col
+      attr_name_end_col = capture_end_col
+    end
+
     -- If there's already class attribute in captured tag, place the cursor at the end.
     if name == attr_value then
       has_class_attr = true
 
       local has_value = string.len(utils.get_node_text(capture)) > 2
 
-      local inject_str = has_value and " " or ""
-      capture_end_col = has_value and capture_end_col or capture_end_col - 1
+      if method == ADD then
+        local inject_str = has_value and " " or ""
+        capture_end_col = has_value and capture_end_col or capture_end_col - 1
 
-      add.more_classes(
-        bufnr,
-        capture_start_row,
-        capture_end_row,
-        capture_end_col,
-        inject_str
-      )
+        add.more_classes(
+          bufnr,
+          capture_start_row,
+          capture_end_row,
+          capture_end_col,
+          inject_str
+        )
+      elseif method == REMOVE then
+        -- utils.set_line(
+        --   bufnr,
+        --   capture_start_row,
+        --   capture_end_row + 1,
+        --   capture_end_col - 1,
+        --   ""
+        -- )
+        -- local line = vim.api.nvim_get_current_line()
+        -- local new_line = line:sub(0, attr_name_start_col - 1)
+        --   .. line:sub(capture_end_col + 1)
+        -- P(new_line)
+      end
     end
   end
 
   if not has_class_attr and tag_name_row ~= 0 then
-    local inject_str = utils.is_jsx(lang) and [[ className=""]] or [[ class=""]]
+    if method == ADD then
+      local inject_str = utils.is_jsx(lang) and [[ className=""]]
+        or [[ class=""]]
 
-    add.class(bufnr, tag_name_row, tag_name_row, tag_name_end_col, inject_str)
+      add.class(bufnr, tag_name_row, tag_name_row, tag_name_end_col, inject_str)
+    end
   end
 end
 
@@ -129,6 +156,14 @@ add.class = function(bufnr, start_row, end_row, end_col, str)
   })
 
   vim.cmd("startinsert")
+end
+
+M.add_class = function()
+  traverse_tree(ADD)
+end
+
+M.remove_class = function()
+  traverse_tree(REMOVE)
 end
 
 return M
