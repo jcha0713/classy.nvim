@@ -1,6 +1,8 @@
 -- TODO: Add remove_class that removes class attribute
 
 local M = {}
+local add = {}
+local remove = {}
 
 local utils = require("classy.utils")
 local ts_utils = require("nvim-treesitter.ts_utils")
@@ -93,38 +95,40 @@ M.add_class = function()
       local inject_str = has_value and " " or ""
       capture_end_col = has_value and capture_end_col or capture_end_col - 1
 
-      utils.set_line(
+      add.more_classes(
         bufnr,
         capture_start_row,
-        capture_end_row + 1,
-        capture_end_col - 1,
+        capture_end_row,
+        capture_end_col,
         inject_str
       )
-
-      vim.api.nvim_win_set_cursor(0, { capture_end_row + 1, capture_end_col })
-
-      vim.cmd("startinsert")
     end
   end
 
   if not has_class_attr and tag_name_row ~= 0 then
     local inject_str = utils.is_jsx(lang) and [[ className=""]] or [[ class=""]]
 
-    utils.set_line(
-      bufnr,
-      tag_name_row,
-      tag_name_row + 1,
-      tag_name_end_col,
-      inject_str
-    )
-
-    vim.api.nvim_win_set_cursor(
-      0,
-      { tag_name_row + 1, tag_name_end_col + string.len(inject_str) - 1 }
-    )
-
-    vim.cmd("startinsert")
+    add.class(bufnr, tag_name_row, tag_name_row, tag_name_end_col, inject_str)
   end
+end
+
+add.more_classes = function(bufnr, start_row, end_row, end_col, str)
+  utils.set_line(bufnr, start_row, end_row + 1, end_col - 1, str)
+
+  vim.api.nvim_win_set_cursor(0, { end_row + 1, end_col })
+
+  vim.cmd("startinsert")
+end
+
+add.class = function(bufnr, start_row, end_row, end_col, str)
+  utils.set_line(bufnr, start_row, end_row + 1, end_col, str)
+
+  vim.api.nvim_win_set_cursor(0, {
+    end_row + 1,
+    end_col + string.len(str) - 1,
+  })
+
+  vim.cmd("startinsert")
 end
 
 return M
