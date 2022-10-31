@@ -58,7 +58,7 @@ M.add_class = function()
     return
   end
 
-  -- Percolate up the lang tree util it reaches the nearest element tag
+  -- Percolate up the lang tree until it reaches the nearest element tag
   while utils.is_not_element(node, lang) do
     if node:parent() == nil then
       return
