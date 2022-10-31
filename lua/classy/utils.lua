@@ -1,15 +1,14 @@
 local M = {}
 
-M.set_line = function(bufnr, start_row, end_row, col, inject_str)
-  local line = vim.api.nvim_buf_get_lines(bufnr, start_row, end_row, false)
-  local new_line = M.replace_line(line[1], col, inject_str)
+M.set_line = function(bufnr, start_row, end_row, start_col, end_col, inject_str)
+  local lines = vim.api.nvim_buf_get_lines(bufnr, start_row, end_row, false)
+  P(lines)
+  local new_line = M.replace_line(lines[1], start_col, end_col, inject_str)
   vim.api.nvim_buf_set_lines(bufnr, start_row, end_row, false, { new_line })
 end
 
-M.replace_line = function(line, replace_col, insert_str)
-  local new_line = line:sub(0, replace_col)
-    .. insert_str
-    .. line:sub(replace_col + 1)
+M.replace_line = function(line, start_col, end_col, insert_str)
+  local new_line = line:sub(0, start_col) .. insert_str .. line:sub(end_col + 1)
   return new_line
 end
 

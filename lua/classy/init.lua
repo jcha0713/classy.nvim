@@ -1,4 +1,4 @@
--- TODO: Add remove_class that removes class attribute
+-- TODO: setup function
 
 local M = {}
 local add = {}
@@ -111,20 +111,18 @@ local traverse_tree = function(method)
           capture_start_row,
           capture_end_row,
           capture_end_col,
+          capture_end_col,
           inject_str
         )
       elseif method == REMOVE then
-        -- utils.set_line(
-        --   bufnr,
-        --   capture_start_row,
-        --   capture_end_row + 1,
-        --   capture_end_col - 1,
-        --   ""
-        -- )
-        -- local line = vim.api.nvim_get_current_line()
-        -- local new_line = line:sub(0, attr_name_start_col - 1)
-        --   .. line:sub(capture_end_col + 1)
-        -- P(new_line)
+        remove.class(
+          bufnr,
+          capture_start_row,
+          capture_end_row + 1,
+          attr_name_start_col - 1, -- -1 for remove trailing space
+          capture_end_col,
+          ""
+        )
       end
     end
   end
@@ -134,21 +132,36 @@ local traverse_tree = function(method)
       local inject_str = utils.is_jsx(lang) and [[ className=""]]
         or [[ class=""]]
 
-      add.class(bufnr, tag_name_row, tag_name_row, tag_name_end_col, inject_str)
+      add.class(
+        bufnr,
+        tag_name_row,
+        tag_name_row,
+        tag_name_end_col,
+        tag_name_end_col,
+        inject_str
+      )
     end
   end
 end
 
-add.more_classes = function(bufnr, start_row, end_row, end_col, str)
-  utils.set_line(bufnr, start_row, end_row + 1, end_col - 1, str)
+add.more_classes = function(bufnr, start_row, end_row, start_col, end_col, str)
+  local quote_offset = 1
+  utils.set_line(
+    bufnr,
+    start_row,
+    end_row + 1,
+    end_col - quote_offset,
+    end_col - quote_offset,
+    str
+  )
 
   vim.api.nvim_win_set_cursor(0, { end_row + 1, end_col })
 
   vim.cmd("startinsert")
 end
 
-add.class = function(bufnr, start_row, end_row, end_col, str)
-  utils.set_line(bufnr, start_row, end_row + 1, end_col, str)
+add.class = function(bufnr, start_row, end_row, start_col, end_col, str)
+  utils.set_line(bufnr, start_row, end_row + 1, start_col, end_col, str)
 
   vim.api.nvim_win_set_cursor(0, {
     end_row + 1,
@@ -156,6 +169,15 @@ add.class = function(bufnr, start_row, end_row, end_col, str)
   })
 
   vim.cmd("startinsert")
+end
+
+remove.class = function(bufnr, start_row, end_row, start_col, end_col, str)
+  utils.set_line(bufnr, start_row, end_row, start_col, end_col, "")
+
+  vim.api.nvim_win_set_cursor(0, {
+    end_row,
+    start_col,
+  })
 end
 
 M.add_class = function()
