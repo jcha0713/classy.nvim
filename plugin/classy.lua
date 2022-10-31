@@ -3,3 +3,9 @@ vim.api.nvim_create_user_command(
   require("classy").add_class,
   {}
 )
+
+vim.api.nvim_create_user_command(
+  "ClassyRemoveClass",
+  require("classy").remove_class,
+  {}
+)
