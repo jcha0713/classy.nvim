@@ -1,5 +1,3 @@
--- TODO: setup function
-
 local M = {}
 local add = {}
 local remove = {}
