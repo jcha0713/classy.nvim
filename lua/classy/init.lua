@@ -3,10 +3,12 @@ local add = {}
 local remove = {}
 local ADD = "add"
 local REMOVE = "remove"
+local opts
 
 local utils = require("classy.utils")
-local ts_utils = require("nvim-treesitter.ts_utils")
+local config = require("classy.config")
 local parsers = require("nvim-treesitter.parsers")
+local ts_utils = require("nvim-treesitter.ts_utils")
 
 local get_query = function(lang)
   local query_text = utils.is_jsx(lang)
@@ -117,7 +119,7 @@ local traverse_tree = function(method)
           bufnr,
           capture_start_row,
           capture_end_row + 1,
-          attr_name_start_col - 1, -- -1 for remove trailing space
+          attr_name_start_col - 1, -- -1 for removing trailing space
           capture_end_col,
           ""
         )
@@ -127,8 +129,9 @@ local traverse_tree = function(method)
 
   if not has_class_attr and tag_name_row ~= 0 then
     if method == ADD then
-      local inject_str = utils.is_jsx(lang) and [[ className=""]]
-        or [[ class=""]]
+      local inject_str = utils.is_jsx(lang)
+          and [[ className=]] .. utils.get_quotes(0)
+        or [[ class=]] .. utils.get_quotes(0)
 
       add.class(
         bufnr,
@@ -172,10 +175,16 @@ end
 remove.class = function(bufnr, start_row, end_row, start_col, end_col, str)
   utils.set_line(bufnr, start_row, end_row, start_col, end_col, "")
 
-  vim.api.nvim_win_set_cursor(0, {
-    end_row,
-    start_col,
-  })
+  if opts.move_cursor_after_remove or opts.insert_after_remove then
+    vim.api.nvim_win_set_cursor(0, {
+      end_row,
+      start_col,
+    })
+  end
+
+  if opts.insert_after_remove then
+    vim.cmd("startinsert")
+  end
 end
 
 M.add_class = function()
@@ -184,6 +193,11 @@ end
 
 M.remove_class = function()
   traverse_tree(REMOVE)
+end
+
+M.setup = function(user_config)
+  config.setup(user_config)
+  opts = config.get()
 end
 
 return M
