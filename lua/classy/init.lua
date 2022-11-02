@@ -74,6 +74,7 @@ local traverse_tree = function(method)
 
   local attr_name_start_col = 0
   local attr_name_end_col = 0
+  local second_tag = false
 
   for id, capture, _ in query:iter_captures(node, bufnr, cursor_row - 1, cursor_row) do
     local tag_name = query.captures[1]
@@ -87,8 +88,12 @@ local traverse_tree = function(method)
 
     -- Store tag name position for future use
     if name == tag_name then
+      if second_tag then
+        goto first_tag
+      end
       tag_name_row = capture_end_row
       tag_name_end_col = capture_end_col
+      second_tag = true
     end
 
     if name == attr_name then
@@ -127,6 +132,7 @@ local traverse_tree = function(method)
     end
   end
 
+  ::first_tag::
   if not has_class_attr and tag_name_row ~= 0 then
     if method == ADD then
       local inject_str = utils.is_jsx(lang)
