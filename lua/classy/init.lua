@@ -19,10 +19,10 @@ local get_query = function(lang)
     [(jsx_element (jsx_opening_element (identifier) @tag_name)) (jsx_self_closing_element (identifier) @tag_name)]
 
     ;; get class attribute value
-    (jsx_element (_ (jsx_attribute (property_identifier) @attr_name (#eq? @attr_name "className") (string) @attr_value))?)
+    (jsx_element(jsx_opening_element (jsx_attribute (property_identifier) @attr_name (#eq? @attr_name "className") [(jsx_expression (template_string) ) (string)] @attr_value)))
 
     ;; handle self closing tag (component)
-    (jsx_self_closing_element attribute: (jsx_attribute (property_identifier) @attr_name (#eq? @attr_name "className") (string) @attr_value))
+    (jsx_self_closing_element attribute: (jsx_attribute (property_identifier) @attr_name (#eq? @attr_name "className") [(jsx_expression (template_string) ) (string)] @attr_value))
     ]]
     or [[
     ;; html
