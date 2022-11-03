@@ -105,9 +105,18 @@ local traverse_tree = function(method)
     if name == attr_value then
       has_class_attr = true
 
-      local has_value = string.len(utils.get_node_text(capture)) > 2
-
       if method == ADD then
+        local no_content_len = 2
+        if
+          capture:named_child(0) ~= nil
+          and capture:named_child(0):type() == "template_string"
+        then
+          capture_end_col = capture_end_col - 1
+          no_content_len = 4
+        end
+
+        local has_value = string.len(utils.get_node_text(capture))
+          > no_content_len
         local inject_str = has_value and " " or ""
         capture_end_col = has_value and capture_end_col or capture_end_col - 1
 
@@ -179,7 +188,7 @@ add.class = function(bufnr, start_row, end_row, start_col, end_col, str)
 end
 
 remove.class = function(bufnr, start_row, end_row, start_col, end_col, str)
-  utils.set_line(bufnr, start_row, end_row, start_col, end_col, "")
+  utils.set_line(bufnr, start_row, end_row, start_col, end_col, str)
 
   if opts.move_cursor_after_remove or opts.insert_after_remove then
     vim.api.nvim_win_set_cursor(0, {
