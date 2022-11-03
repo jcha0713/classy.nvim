@@ -8,7 +8,7 @@ M.get_query = function(lang)
     ;; jsx
 
     ;; get @tag_name
-    [(jsx_element (jsx_opening_element name: (identifier) @tag_name)) (jsx_self_closing_element name: (identifier) @tag_name)]
+    [(jsx_element (jsx_opening_element name: [( nested_identifier ) ( identifier )] @tag_name)) (jsx_self_closing_element name: [( nested_identifier ) ( identifier )] @tag_name)]
 
     ;; get class attribute value
     (jsx_element(jsx_opening_element (jsx_attribute (property_identifier) @attr_name (#eq? @attr_name "className") [(jsx_expression (_)?) (string)] @attr_value)))
@@ -25,6 +25,7 @@ M.get_query = function(lang)
     ;; get class attribute value
     (element (_ (attribute (attribute_name) @attr_name (#eq? @attr_name "class") (quoted_attribute_value) @attr_value)))
     ]]
+
   local query = vim.treesitter.query.parse_query(lang, query_text)
 
   return query
