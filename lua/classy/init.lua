@@ -1,4 +1,5 @@
 local M = {}
+
 local add = {}
 local remove = {}
 local ADD = "add"
@@ -7,36 +8,9 @@ local opts
 
 local utils = require("classy.utils")
 local config = require("classy.config")
+local queries = require("classy.queries")
 local parsers = require("nvim-treesitter.parsers")
 local ts_utils = require("nvim-treesitter.ts_utils")
-
-local get_query = function(lang)
-  local query_text = utils.is_jsx(lang)
-      and [[
-    ;; jsx
-
-    ;; get @tag_name
-    [(jsx_element (jsx_opening_element (identifier) @tag_name)) (jsx_self_closing_element (identifier) @tag_name)]
-
-    ;; get class attribute value
-    (jsx_element(jsx_opening_element (jsx_attribute (property_identifier) @attr_name (#eq? @attr_name "className") [(jsx_expression (template_string) ) (string)] @attr_value)))
-
-    ;; handle self closing tag (component)
-    (jsx_self_closing_element attribute: (jsx_attribute (property_identifier) @attr_name (#eq? @attr_name "className") [(jsx_expression (template_string) ) (string)] @attr_value))
-    ]]
-    or [[
-    ;; html
-
-    ;; get @tag_name
-    (element [(start_tag (tag_name) @tag_name) (self_closing_tag (tag_name) @tag_name)])
-
-    ;; get class attribute value
-    (element (_ (attribute (attribute_name) @attr_name (#eq? @attr_name "class") (quoted_attribute_value) @attr_value)))
-    ]]
-  local query = vim.treesitter.query.parse_query(lang, query_text)
-
-  return query
-end
 
 -- Place the cursor at the end of the class attribute in a tag.
 -- If the class attribute is not present, then add one.
@@ -50,7 +24,7 @@ local traverse_tree = function(method)
   -- treesitter query to capture the tag name of an element,
   -- attribute name,
   -- and attribute value
-  local query = get_query(lang)
+  local query = queries.get_query(lang)
 
   -- find the node at current cursor position
   local node = ts_utils.get_node_at_cursor()
