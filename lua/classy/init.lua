@@ -1,16 +1,49 @@
+-- TODO: JSX or HTML tag query table로 처리
+-- TODO: JSX일 때 template_string 핸들링
+
 local M = {}
 
+local opts
 local add = {}
 local remove = {}
+local ranges = {}
 local ADD = "add"
 local REMOVE = "remove"
-local opts
 
 local utils = require("classy.utils")
 local config = require("classy.config")
 local queries = require("classy.queries")
 local parsers = require("nvim-treesitter.parsers")
 local ts_utils = require("nvim-treesitter.ts_utils")
+
+local get_range = function(name, node)
+  if not node then
+    return
+  end
+  local start_row, start_col, end_row, end_col = node:range()
+  ranges[name] = {
+    start_row = start_row,
+    start_col = start_col,
+    end_row = end_row,
+    end_col = end_col,
+  }
+end
+
+local get_query = function(lang)
+  local query_text = utils.is_jsx(lang)
+      and [[
+    ;; jsx
+      ((property_identifier) @attr_name (#eq? @attr_name "className") [(jsx_expression (_)?) (string)] @attr_value (#offset! @attr_value)) 
+    ]]
+    or [[
+    ;; html
+     ((attribute_name) @attr_name (#eq? @attr_name "class") (quoted_attribute_value) @attr_value (#offset! @attr_value))
+    ]]
+
+  local query = vim.treesitter.query.parse_query(lang, query_text)
+
+  return query
+end
 
 -- Place the cursor at the end of the class attribute in a tag.
 -- If the class attribute is not present, then add one.
@@ -20,11 +53,6 @@ local traverse_tree = function(method)
   local cursor_row, cursor_col = unpack(cursor_pos)
   local ft = vim.api.nvim_buf_get_option(bufnr, "ft")
   local lang = parsers.ft_to_lang(ft)
-
-  -- treesitter query to capture the tag name of an element,
-  -- attribute name,
-  -- and attribute value
-  local query = queries.get_query(lang)
 
   -- find the node at current cursor position
   local node = ts_utils.get_node_at_cursor()
@@ -42,97 +70,113 @@ local traverse_tree = function(method)
     node = node:parent()
   end
 
-  local has_class_attr = false
-  local tag_name_row = 0
-  local tag_name_end_col = 0
+  local has_class_attr = true
 
-  local attr_name_start_col = 0
-  local attr_name_end_col = 0
-  local second_tag = false
+  local get_tag = vim.treesitter.query.parse_query(
+    lang,
+    -- [[ ([( jsx_self_closing_element ) ( jsx_opening_element ) ] @open (#offset! @open)) ]]
+    [[([( start_tag ) ( self_closing_tag ) ] @tag (#offset! @tag))]]
+  ):iter_captures(node, bufnr)
 
-  for id, capture, _ in query:iter_captures(node, bufnr, cursor_row - 1, cursor_row) do
-    local tag_name = query.captures[1]
-    local attr_name = query.captures[2]
-    local attr_value = query.captures[3]
+  local get_value = get_query(lang):iter_captures(node, bufnr)
 
-    local name = query.captures[id]
+  local _, tag = get_tag()
+  local _, class = get_value()
+  local _, value = get_value()
 
-    local capture_start_row, capture_start_col, capture_end_row, capture_end_col =
-      capture:range()
+  get_range("class", class)
+  get_range("tag", tag)
 
-    -- Store tag name position for future use
-    if name == tag_name then
-      if second_tag then
-        goto first_tag
-      end
-      tag_name_row = capture_end_row
-      tag_name_end_col = capture_end_col
-      second_tag = true
-    end
-
-    if name == attr_name then
-      attr_name_start_col = capture_start_col
-      attr_name_end_col = capture_end_col
-    end
-
-    -- If there's already class attribute in captured tag, place the cursor at the end.
-    if name == attr_value then
-      has_class_attr = true
-
-      if method == ADD then
-        local no_content_len = 2
-        if
-          capture:named_child(0) ~= nil
-          and capture:named_child(0):type() == "template_string"
-        then
-          capture_end_col = capture_end_col - 1
-          no_content_len = 4
-        end
-
-        local has_value = string.len(utils.get_node_text(capture))
-          > no_content_len
-        local inject_str = has_value and " " or ""
-        capture_end_col = has_value and capture_end_col or capture_end_col - 1
-
-        add.more_classes(
-          bufnr,
-          capture_start_row,
-          capture_end_row,
-          capture_end_col,
-          capture_end_col,
-          inject_str
-        )
-      elseif method == REMOVE then
-        remove.class(
-          bufnr,
-          capture_start_row,
-          capture_end_row + 1,
-          attr_name_start_col - 1, -- -1 for removing trailing space
-          capture_end_col,
-          ""
-        )
-      end
-    end
+  if tag:named_child(0) ~= nil then
+    get_range("tag_name", tag:named_child(0))
   end
 
-  ::first_tag::
-  if not has_class_attr and tag_name_row ~= 0 then
-    if method == ADD then
-      local inject_str = utils.is_jsx(lang)
-          and [[ className=]] .. utils.get_quotes(0)
-        or [[ class=]] .. utils.get_quotes(0)
+  if not class then
+    add.new_attribute(
+      bufnr,
+      lang,
+      ranges["tag_name"].start_row,
+      ranges["tag_name"].end_row,
+      ranges["tag_name"].start_col,
+      ranges["tag_name"].end_col
+    )
+    return
+  else
+    get_range("value", value)
+  end
 
-      add.class(
+  if
+    ranges["value"].start_row < ranges["tag"].start_row
+    or ranges["value"].end_row > ranges["tag"].end_row
+  then
+    add.new_attribute(
+      bufnr,
+      lang,
+      ranges["tag_name"].start_row,
+      ranges["tag_name"].end_row,
+      ranges["tag_name"].start_col,
+      ranges["tag_name"].end_col
+    )
+    return
+  end
+
+  if method == ADD then
+    local no_content_len = 2
+    if value ~= nil then
+      local has_value = string.len(utils.get_node_text(value)) > no_content_len
+      local inject_str = has_value and " " or ""
+      ranges["value"].end_col = has_value and ranges["value"].end_col
+        or ranges["value"].end_col - 1
+
+      add.more_classes(
         bufnr,
-        tag_name_row,
-        tag_name_row,
-        tag_name_end_col,
-        tag_name_end_col,
+        ranges["value"].start_row,
+        ranges["value"].end_row,
+        ranges["value"].start_col,
+        ranges["value"].end_col,
         inject_str
       )
     end
+  elseif method == REMOVE then
+    remove.class(
+      bufnr,
+      ranges["value"].start_row,
+      ranges["value"].end_row + 1,
+      ranges["class"].start_col - 1, -- -1 for removing trailing space
+      ranges["value"].end_col,
+      ""
+    )
   end
+
+  --   if method == ADD then
+  --     local no_content_len = 2
+  --     if
+  --       capture:named_child(0) ~= nil
+  --       and capture:named_child(0):type() == "template_string"
+  --     then
+  --       capture_end_col = capture_end_col - 1
+  --       no_content_len = 4
+  --     end
+  --   elseif method == REMOVE then
+  --     remove.class(
+  --       bufnr,
+  --       capture_start_row,
+  --       capture_end_row + 1,
+  --       attr_name_start_col - 1, -- -1 for removing trailing space
+  --       capture_end_col,
+  --       ""
+  --     )
+  --   end
 end
+
+add.new_attribute =
+  function(bufnr, lang, start_row, end_row, start_col, end_col)
+    local inject_str = utils.is_jsx(lang)
+        and [[ className=]] .. utils.get_quotes(0)
+      or [[ class=]] .. utils.get_quotes(0)
+
+    add.class(bufnr, start_row, end_row, end_col, end_col, inject_str)
+  end
 
 add.more_classes = function(bufnr, start_row, end_row, start_col, end_col, str)
   local quote_offset = 1
@@ -188,5 +232,7 @@ M.setup = function(user_config)
   config.setup(user_config)
   opts = config.get()
 end
+
+M.setup({})
 
 return M
