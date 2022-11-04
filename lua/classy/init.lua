@@ -32,7 +32,6 @@ local traverse_tree = function(method)
   local bufnr = vim.api.nvim_get_current_buf()
   local ft = vim.api.nvim_buf_get_option(bufnr, "ft")
   local lang = parsers.ft_to_lang(ft)
-  P(lang)
 
   -- find the node at current cursor position
   local node = ts_utils.get_node_at_cursor()
