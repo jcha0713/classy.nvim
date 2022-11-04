@@ -2,28 +2,31 @@ local M = {}
 
 local utils = require("classy.utils")
 
-M.get_query = function(lang)
+M.get_attr_query = function(lang)
   local query_text = utils.is_jsx(lang)
       and [[
     ;; jsx
+    ((property_identifier) @attr_name (#eq? @attr_name "className") [(jsx_expression (_)?) (string)] @attr_value) 
+  ]]
+    or [[
+    ;; html
+   ((attribute_name) @attr_name (#eq? @attr_name "class") (quoted_attribute_value) @attr_value)
+  ]]
 
-    ;; get @tag_name
-    [(jsx_element (jsx_opening_element name: [( nested_identifier ) ( identifier )] @tag_name)) (jsx_self_closing_element name: [( nested_identifier ) ( identifier )] @tag_name)]
+  local query = vim.treesitter.query.parse_query(lang, query_text)
 
-    ;; get class attribute value
-    (jsx_element(jsx_opening_element (jsx_attribute (property_identifier) @attr_name (#eq? @attr_name "className") [(jsx_expression (_)?) (string)] @attr_value)))
+  return query
+end
 
-    ;; handle self closing tag (component)
-    (jsx_self_closing_element attribute: (jsx_attribute (property_identifier) @attr_name (#eq? @attr_name "className") [(jsx_expression (_)?) (string)] @attr_value))
+M.get_tag_query = function(lang)
+  local query_text = utils.is_jsx(lang)
+      and [[
+    ;; jsx
+    ([( jsx_self_closing_element ) ( jsx_opening_element ) ] @open )
     ]]
     or [[
     ;; html
-
-    ;; get @tag_name
-    (element [(start_tag (tag_name) @tag_name) (self_closing_tag (tag_name) @tag_name)])
-
-    ;; get class attribute value
-    (element (_ (attribute (attribute_name) @attr_name (#eq? @attr_name "class") (quoted_attribute_value) @attr_value)))
+    ([( start_tag ) ( self_closing_tag ) ] @tag)
     ]]
 
   local query = vim.treesitter.query.parse_query(lang, query_text)
