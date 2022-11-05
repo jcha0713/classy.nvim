@@ -6,7 +6,7 @@ A simple Neovim plugin for adding and removing class attributes in your HTML/JSX
 
 ## 💫 Features
 
-- add/remove class attribute from any HTML element
+- adds/removes class attribute to/from any HTML element
 - can handle nested elements too
 - works for HTML/JSX/TSX documents
 - configurable to use single/double quotes
@@ -17,8 +17,8 @@ A simple Neovim plugin for adding and removing class attributes in your HTML/JSX
 `classy` provides two functions you can easily map and use: `ClassyAddClass` and `ClassyRemoveClass`
 
 ```lua
-vim.keymap.set('n', <leader>ac, :ClassyAddClass<CR>)
-vim.keymap.set('n', <leader>dc, :ClassyRemoveClass<CR>)
+vim.keymap.set('n', "<leader>ac", :ClassyAddClass<CR>)
+vim.keymap.set('n', "<leader>dc", :ClassyRemoveClass<CR>)
 ```
 
 ## 💻 Setup
