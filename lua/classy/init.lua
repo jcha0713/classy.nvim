@@ -31,7 +31,48 @@ end
 local traverse_tree = function(method)
   local bufnr = vim.api.nvim_get_current_buf()
   local ft = vim.api.nvim_buf_get_option(bufnr, "ft")
-  local lang = parsers.ft_to_lang(ft)
+
+  -- astro uses "class" insated of "classname"
+  -- but the syntax is close to tsx
+  -- so it needs a dedicated boolean flag to check it
+  local is_astro = ft == "astro"
+
+  -- Check whether a parser for the language is installed
+  local parser_lang = parsers.ft_to_lang(ft)
+  local installed = vim.treesitter.language.require_language(
+    parser_lang,
+    nil,
+    true
+  )
+
+  if not installed then
+    vim.notify(
+      "No Treesitter parser was found for " .. parser_lang,
+      vim.log.levels.ERROR
+    )
+    return
+  end
+
+  if ft == "markdown.mdx" then
+    ft = "markdown"
+  end
+
+  -- get cursor position
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local range = {
+    cursor[1],
+    cursor[2],
+    cursor[1],
+    cursor[2],
+  }
+
+  local lang_tree = vim.treesitter.get_parser(bufnr, parser_lang)
+
+  -- get lang information of current position
+  local current_tree = lang_tree:language_for_range(range)
+  local lang_at_cursor = current_tree:lang()
+
+  local lang = parsers.ft_to_lang(lang_at_cursor)
 
   -- find the node at current cursor position
   local node = ts_utils.get_node_at_cursor()
@@ -51,7 +92,10 @@ local traverse_tree = function(method)
 
   -- Get the first captured nodes from the iterator
   local get_tag = queries.get_tag_query(lang):iter_captures(node, bufnr)
-  local get_value = queries.get_attr_query(lang):iter_captures(node, bufnr)
+  local get_value = queries.get_attr_query(lang, is_astro):iter_captures(
+    node,
+    bufnr
+  )
 
   local _, tag = get_tag()
   local _, class = get_value()
@@ -147,6 +191,12 @@ Add.new_attribute =
     local inject_str = utils.is_jsx(lang)
         and [[ className=]] .. utils.get_quotes(0)
       or [[ class=]] .. utils.get_quotes(0)
+
+    -- use "class" if the filetype is astro
+    local ft = vim.api.nvim_buf_get_option(bufnr, "ft")
+    if ft == "astro" then
+      inject_str = [[ class=]] .. utils.get_quotes(0)
+    end
 
     utils.set_line(bufnr, start_row, end_row + 1, end_col, end_col, inject_str)
 
