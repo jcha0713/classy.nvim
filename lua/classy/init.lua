@@ -101,6 +101,10 @@ local traverse_tree = function(method)
   local _, class = get_value()
   local _, value = get_value()
 
+  -- P(utils.get_node_text(tag))
+  -- P(utils.get_node_text(class))
+  -- P(utils.get_node_text(value))
+
   -- Save the range of each nodes
   get_range("class", class)
   get_range("tag", tag)
@@ -127,8 +131,10 @@ local traverse_tree = function(method)
   -- add a new class attribute
   -- or notify the user that no attribute was found
   if
-    ranges["value"].start_row < ranges["tag"].start_row
-    or ranges["value"].end_row > ranges["tag"].end_row
+    (
+      ranges["value"].start_row < ranges["tag"].start_row
+      or ranges["value"].end_row > ranges["tag"].end_row
+    ) or (ranges["value"].start_col > ranges["tag"].end_col)
   then
     if method == ADD then
       Add.new_attribute(
