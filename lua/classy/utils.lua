@@ -21,6 +21,10 @@ M.is_jsx = function(lang)
   return (lang == "javascript" or lang == "typescript" or lang == "tsx")
 end
 
+M.is_same_line = function(end_row1, end_row2)
+  return end_row2 - end_row1 == 0
+end
+
 M.is_not_element = function(node, lang)
   if M.is_jsx(lang) then
     return node:type() ~= "jsx_element"
