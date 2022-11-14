@@ -121,7 +121,7 @@ local traverse_tree = function(method)
         ranges["tag_name"].end_col
       )
     elseif method == REMOVE or method == RESET then
-      vim.notify("No class attribute was found", vim.log.levels.WARN)
+      vim.notify("No class attribute was found", vim.log.levels.INFO)
     end
     return
   else
@@ -151,7 +151,7 @@ local traverse_tree = function(method)
         ranges["tag_name"].end_col
       )
     elseif method == REMOVE or method == RESET then
-      vim.notify("No class attribute was found", vim.log.levels.WARN)
+      vim.notify("No class attribute was found", vim.log.levels.INFO)
     end
     return
   end
