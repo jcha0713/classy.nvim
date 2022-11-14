@@ -6,6 +6,7 @@ local Remove = {}
 local ranges = {}
 local ADD = "add"
 local REMOVE = "remove"
+local RESET = "reset"
 
 local utils = require("classy.utils")
 local config = require("classy.config")
@@ -119,8 +120,9 @@ local traverse_tree = function(method)
         ranges["tag_name"].start_col,
         ranges["tag_name"].end_col
       )
+    elseif method == REMOVE or method == RESET then
+      vim.notify("No class attribute was found", vim.log.levels.WARN)
     end
-    -- if method is REMOVE, do nothing
     return
   else
     get_range("value", value)
@@ -148,7 +150,7 @@ local traverse_tree = function(method)
         ranges["tag_name"].start_col,
         ranges["tag_name"].end_col
       )
-    elseif method == REMOVE then
+    elseif method == REMOVE or method == RESET then
       vim.notify("No class attribute was found", vim.log.levels.WARN)
     end
     return
@@ -189,6 +191,23 @@ local traverse_tree = function(method)
         ranges["class"].start_col - 1, -- -1 for removing trailing space
         ranges["value"].end_col,
         ""
+      )
+    elseif method == RESET then
+      Remove.class(
+        bufnr,
+        ranges["value"].start_row,
+        ranges["value"].end_row + 1,
+        ranges["class"].start_col - 1, -- -1 for removing trailing space
+        ranges["value"].end_col,
+        ""
+      )
+      Add.new_attribute(
+        bufnr,
+        lang,
+        ranges["tag_name"].start_row,
+        ranges["tag_name"].end_row,
+        ranges["tag_name"].start_col,
+        ranges["tag_name"].end_col
       )
     end
   end
@@ -254,6 +273,10 @@ end
 
 M.remove_class = function()
   traverse_tree(REMOVE)
+end
+
+M.reset_class = function()
+  traverse_tree(RESET)
 end
 
 M.setup = function(user_config)

@@ -9,3 +9,9 @@ vim.api.nvim_create_user_command(
   require("classy").remove_class,
   {}
 )
+
+vim.api.nvim_create_user_command(
+  "ClassyResetClass",
+  require("classy").reset_class,
+  {}
+)
