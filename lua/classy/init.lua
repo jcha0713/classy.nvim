@@ -109,15 +109,18 @@ local traverse_tree = function(method)
     get_range("tag_name", tag:named_child(0))
   end
 
-  if not class and method == ADD then
-    Add.new_attribute(
-      bufnr,
-      lang,
-      ranges["tag_name"].start_row,
-      ranges["tag_name"].end_row,
-      ranges["tag_name"].start_col,
-      ranges["tag_name"].end_col
-    )
+  if not class then
+    if method == ADD then
+      Add.new_attribute(
+        bufnr,
+        lang,
+        ranges["tag_name"].start_row,
+        ranges["tag_name"].end_row,
+        ranges["tag_name"].start_col,
+        ranges["tag_name"].end_col
+      )
+    end
+    -- if method is REMOVE, do nothing
     return
   else
     get_range("value", value)
@@ -257,7 +260,5 @@ M.setup = function(user_config)
   config.setup(user_config)
   opts = config.get()
 end
-
-M.setup({})
 
 return M
