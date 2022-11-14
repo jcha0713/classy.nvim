@@ -14,11 +14,50 @@ A simple Neovim plugin for adding and removing class attributes in your HTML/JSX
 
 ## 🔦 Usage
 
-`classy` provides two functions you can easily map and use: `ClassyAddClass` and `ClassyRemoveClass`
+`classy` provides three functions you can easily map and use: `ClassyAddClass`, `ClassyRemoveClass`, and `ClassyResetClass`.
 
 ```lua
 vim.keymap.set('n', "<leader>ac", :ClassyAddClass<CR>)
 vim.keymap.set('n', "<leader>dc", :ClassyRemoveClass<CR>)
+vim.keymap.set('n', "<leader>rs", :ClassyResetClass<CR>)
+```
+
+### `ClassyAddClass`
+
+When `ClassyAddClass` is called, it finds the nearest element from your cursor and performs one of the two following behaviors based on the state of that element.
+
+- If the element already has a class attribute, then it places your cursor to the end so that you can start adding new values by yourself.
+- If no class attribute is present, it adds a new one for you.
+
+```html
+<p></p>
+
+<!-- ClassyAddClass -->
+<!-- | represents the cursor -->
+<p class="|"></p>
+```
+
+```html
+<p class="my-p"></p>
+
+<!-- ClassyAddClass -->
+<!-- | represents the cursor -->
+<p class="my-p |"></p>
+```
+
+### Difference between `ClassyRemoveClass` and `ClassyResetClass`
+
+`ClassyRemoveClass` removes the class attribute itself from an element, whereas `ClassyResetClass` only removes the string values from the class attribute.
+
+```html
+<p class="my-p"></p>
+
+<!-- ClassyRemoveClass -->
+<p></p>
+
+<!-- ClassyResetClass -->
+<!-- | represents the cursor -->
+<p class="|"></p>
 ```
 
 ## 💻 Setup
@@ -31,7 +70,7 @@ vim.keymap.set('n', "<leader>dc", :ClassyRemoveClass<CR>)
 ### Installation
 
 Use your favorite plugin manager to install.
-I'm using packer[`packer.nvim`](https://github.com/wbthomason/packer.nvim) in this example.
+I'm using [`packer.nvim`](https://github.com/wbthomason/packer.nvim) in this example.
 
 ```lua
 use({
@@ -73,7 +112,7 @@ You can set `insert_after_remove` to true if you want to change to insert mode e
 
 Determines whether to move the cursor to the position where class removal happens. This is useful when you try to remove a class attribute while your cursor is on the closing tag of a deeply nested element.
 
-## ⚠️ Contributing
+## 📩 Contributing
 
 Any PRs or issues to improve the quality of the plugin are appreciated. I have not tested for all kinds of UI framework out there so please let me know if there is any bug, so I can help!
 
