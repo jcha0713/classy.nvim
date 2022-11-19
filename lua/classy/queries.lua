@@ -6,13 +6,17 @@ M.get_attr_query = function(lang, is_astro)
   local class = is_astro and [[class]] or [[className]]
   local query_text = utils.is_jsx(lang)
       and [[
-    ;; jsx
-    ((property_identifier) @attr_name (#eq? @attr_name ]] .. class .. [[) [(jsx_expression (_)?) (string)] @attr_value) 
-  ]]
+      ;; jsx
+      ((property_identifier) @attr_name (#eq? @attr_name ]] .. class .. [[) [(jsx_expression (_)?) (string)] @attr_value) 
+    ]]
+    or is_astro and [[
+      ;; astro
+      ((attribute_name) @attr_name (#eq? @attr_name "class") [(quoted_attribute_value) (interpolation)] @attr_value)
+    ]]
     or [[
-    ;; html
-   ((attribute_name) @attr_name (#eq? @attr_name "class") (quoted_attribute_value) @attr_value)
-  ]]
+      ;; html
+     ((attribute_name) @attr_name (#eq? @attr_name "class") (quoted_attribute_value) @attr_value)
+    ]]
 
   local query = vim.treesitter.query.parse_query(lang, query_text)
 

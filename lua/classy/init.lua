@@ -161,13 +161,14 @@ local traverse_tree = function(method)
       local no_content_len = 2
       -- handle template string cases
       if
-        value:named_child(0) ~= nil
-        and value:named_child(0):type() == "template_string"
+        (
+          value:named_child(0) ~= nil
+          and value:named_child(0):type() == "template_string"
+        ) or (is_astro and utils.is_template_string(value))
       then
         ranges["value"].end_col = ranges["value"].end_col - 1
         no_content_len = 4
       end
-
       -- if the attribute value is just an empty string (""),
       -- no need to add a space
       local has_value = string.len(utils.get_node_text(value)) > no_content_len
@@ -193,21 +194,23 @@ local traverse_tree = function(method)
         ""
       )
     elseif method == RESET then
+      local cursor_offset = 1
+      if
+        (
+          value:named_child(0) ~= nil
+          and value:named_child(0):type() == "template_string"
+        ) or (is_astro and utils.is_template_string(value))
+      then
+        cursor_offset = 2
+      end
       Remove.class(
         bufnr,
         ranges["value"].start_row,
         ranges["value"].end_row + 1,
-        ranges["class"].start_col - 1, -- -1 for removing trailing space
-        ranges["value"].end_col,
-        ""
-      )
-      Add.new_attribute(
-        bufnr,
-        lang,
-        ranges["tag_name"].start_row,
-        ranges["tag_name"].end_row,
-        ranges["tag_name"].start_col,
-        ranges["tag_name"].end_col
+        ranges["value"].start_col + cursor_offset, -- -1 for removing trailing space
+        ranges["value"].end_col - cursor_offset,
+        "",
+        RESET
       )
     end
   end
@@ -216,34 +219,37 @@ end
 -- add a new class attribute
 Add.new_attribute =
   function(bufnr, lang, start_row, end_row, start_col, end_col)
-    local inject_str = utils.is_jsx(lang)
-        and [[ className=]] .. utils.get_quotes(0)
-      or [[ class=]] .. utils.get_quotes(0)
+    local inject_str = ""
 
     -- use "class" if the filetype is astro
     local ft = vim.api.nvim_buf_get_option(bufnr, "ft")
     if ft == "astro" then
       inject_str = [[ class=]] .. utils.get_quotes(0)
+    else
+      inject_str = utils.is_jsx(lang) and [[ className=]] .. utils.get_quotes(0)
+        or [[ class=]] .. utils.get_quotes(0)
     end
 
     utils.set_line(bufnr, start_row, end_row + 1, end_col, end_col, inject_str)
 
+    local cursor_offset = 1
+
     vim.api.nvim_win_set_cursor(0, {
       end_row + 1,
-      end_col + string.len(inject_str) - 1,
+      end_col + string.len(inject_str) - cursor_offset,
     })
 
     vim.cmd("startinsert")
   end
 
 Add.more_classes = function(bufnr, start_row, end_row, start_col, end_col, str)
-  local quote_offset = 1
+  local cursor_offset = 1
   utils.set_line(
     bufnr,
     start_row,
     end_row + 1,
-    end_col - quote_offset,
-    end_col - quote_offset,
+    end_col - cursor_offset,
+    end_col - cursor_offset,
     str
   )
 
@@ -252,20 +258,26 @@ Add.more_classes = function(bufnr, start_row, end_row, start_col, end_col, str)
   vim.cmd("startinsert")
 end
 
-Remove.class = function(bufnr, start_row, end_row, start_col, end_col, str)
-  utils.set_line(bufnr, start_row, end_row, start_col, end_col, str)
+Remove.class =
+  function(bufnr, start_row, end_row, start_col, end_col, str, method)
+    method = method or REMOVE
+    utils.set_line(bufnr, start_row, end_row, start_col, end_col, str)
 
-  if opts.move_cursor_after_remove or opts.insert_after_remove then
-    vim.api.nvim_win_set_cursor(0, {
-      end_row,
-      start_col,
-    })
-  end
+    if
+      method == RESET
+      or opts.move_cursor_after_remove
+      or opts.insert_after_remove
+    then
+      vim.api.nvim_win_set_cursor(0, {
+        end_row,
+        start_col,
+      })
+    end
 
-  if opts.insert_after_remove then
-    vim.cmd("startinsert")
+    if method == RESET or opts.insert_after_remove then
+      vim.cmd("startinsert")
+    end
   end
-end
 
 M.add_class = function()
   traverse_tree(ADD)

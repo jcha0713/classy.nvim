@@ -25,6 +25,12 @@ M.is_same_line = function(end_row1, end_row2)
   return end_row2 - end_row1 == 0
 end
 
+-- temporary solution for handling template strings in astro
+M.is_template_string = function(value)
+  local value_str = M.get_node_text(value)
+  return value_str:sub(2, 2) == [[`]] and value_str:sub(-2, -2) == [[`]]
+end
+
 M.is_not_element = function(node, lang)
   if M.is_jsx(lang) then
     return node:type() ~= "jsx_element"
@@ -36,13 +42,14 @@ end
 
 M.get_quotes = function(num)
   num = math.max(num, 0)
-  local opts = config.get()
-  local quote = opts.use_double_quote and [["]] or [[']]
   local spaces = ""
 
   for i = 1, num do
     spaces = spaces .. " "
   end
+
+  local opts = config.get()
+  local quote = opts.use_double_quote and [["]] or [[']]
   return quote .. spaces .. quote
 end
 
