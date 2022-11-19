@@ -1,5 +1,7 @@
 # classy.nvim
 
+- [한국어 문서 읽으러 가기](README-KO.md)
+
 A simple Neovim plugin for adding and removing class attributes in your HTML/JSX document.
 
 ![classy](./extra/classy.gif)
@@ -17,6 +19,7 @@ A simple Neovim plugin for adding and removing class attributes in your HTML/JSX
 `classy` provides three functions you can easily map and use: `ClassyAddClass`, `ClassyRemoveClass`, and `ClassyResetClass`.
 
 ```lua
+-- example keymaps
 vim.keymap.set('n', "<leader>ac", :ClassyAddClass<CR>)
 vim.keymap.set('n', "<leader>dc", :ClassyRemoveClass<CR>)
 vim.keymap.set('n', "<leader>rs", :ClassyResetClass<CR>)
