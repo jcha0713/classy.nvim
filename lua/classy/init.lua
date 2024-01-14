@@ -12,7 +12,6 @@ local utils = require("classy.utils")
 local config = require("classy.config")
 local queries = require("classy.queries")
 local parsers = require("nvim-treesitter.parsers")
-local ts_utils = require("nvim-treesitter.ts_utils")
 
 local get_range = function(name, node)
   if not node then
@@ -76,7 +75,7 @@ local traverse_tree = function(method)
   local lang = parsers.ft_to_lang(lang_at_cursor)
 
   -- find the node at current cursor position
-  local node = ts_utils.get_node_at_cursor()
+  local node = vim.treesitter.get_node()
 
   if not node then
     error("No Treesitter parser found.")

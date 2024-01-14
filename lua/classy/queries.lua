@@ -18,7 +18,7 @@ M.get_attr_query = function(lang, is_astro)
      ((attribute_name) @attr_name (#eq? @attr_name "class") (quoted_attribute_value) @attr_value)
     ]]
 
-  local query = vim.treesitter.query.parse_query(lang, query_text)
+  local query = vim.treesitter.query.parse(lang, query_text)
 
   return query
 end
@@ -34,7 +34,7 @@ M.get_tag_query = function(lang)
     ([( start_tag ) ( self_closing_tag ) ] @tag)
     ]]
 
-  local query = vim.treesitter.query.parse_query(lang, query_text)
+  local query = vim.treesitter.query.parse(lang, query_text)
 
   return query
 end
