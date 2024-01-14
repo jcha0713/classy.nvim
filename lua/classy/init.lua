@@ -39,11 +39,8 @@ local traverse_tree = function(method)
 
   -- Check whether a parser for the language is installed
   local parser_lang = parsers.ft_to_lang(ft)
-  local installed = vim.treesitter.language.require_language(
-    parser_lang,
-    nil,
-    true
-  )
+  local installed =
+    vim.treesitter.language.require_language(parser_lang, nil, true)
 
   if not installed then
     vim.notify(
@@ -92,10 +89,8 @@ local traverse_tree = function(method)
 
   -- Get the first captured nodes from the iterator
   local get_tag = queries.get_tag_query(lang):iter_captures(node, bufnr)
-  local get_value = queries.get_attr_query(lang, is_astro):iter_captures(
-    node,
-    bufnr
-  )
+  local get_value =
+    queries.get_attr_query(lang, is_astro):iter_captures(node, bufnr)
 
   local _, tag = get_tag()
   local _, class = get_value()
@@ -216,30 +211,36 @@ local traverse_tree = function(method)
 end
 
 -- add a new class attribute
-Add.new_attribute =
-  function(bufnr, lang, start_row, end_row, start_col, end_col)
-    local inject_str = ""
+Add.new_attribute = function(
+  bufnr,
+  lang,
+  start_row,
+  end_row,
+  start_col,
+  end_col
+)
+  local inject_str = ""
 
-    -- use "class" if the filetype is astro
-    local ft = vim.api.nvim_buf_get_option(bufnr, "ft")
-    if ft == "astro" then
-      inject_str = [[ class=]] .. utils.get_quotes(0)
-    else
-      inject_str = utils.is_jsx(lang) and [[ className=]] .. utils.get_quotes(0)
-        or [[ class=]] .. utils.get_quotes(0)
-    end
-
-    utils.set_line(bufnr, start_row, end_row + 1, end_col, end_col, inject_str)
-
-    local cursor_offset = 1
-
-    vim.api.nvim_win_set_cursor(0, {
-      end_row + 1,
-      end_col + string.len(inject_str) - cursor_offset,
-    })
-
-    vim.cmd("startinsert")
+  -- use "class" if the filetype is astro
+  local ft = vim.api.nvim_buf_get_option(bufnr, "ft")
+  if ft == "astro" then
+    inject_str = [[ class=]] .. utils.get_quotes(0)
+  else
+    inject_str = utils.is_jsx(lang) and [[ className=]] .. utils.get_quotes(0)
+      or [[ class=]] .. utils.get_quotes(0)
   end
+
+  utils.set_line(bufnr, start_row, end_row + 1, end_col, end_col, inject_str)
+
+  local cursor_offset = 1
+
+  vim.api.nvim_win_set_cursor(0, {
+    end_row + 1,
+    end_col + string.len(inject_str) - cursor_offset,
+  })
+
+  vim.cmd("startinsert")
+end
 
 Add.more_classes = function(bufnr, start_row, end_row, start_col, end_col, str)
   local cursor_offset = 1
@@ -257,26 +258,33 @@ Add.more_classes = function(bufnr, start_row, end_row, start_col, end_col, str)
   vim.cmd("startinsert")
 end
 
-Remove.class =
-  function(bufnr, start_row, end_row, start_col, end_col, str, method)
-    method = method or REMOVE
-    utils.set_line(bufnr, start_row, end_row, start_col, end_col, str)
+Remove.class = function(
+  bufnr,
+  start_row,
+  end_row,
+  start_col,
+  end_col,
+  str,
+  method
+)
+  method = method or REMOVE
+  utils.set_line(bufnr, start_row, end_row, start_col, end_col, str)
 
-    if
-      method == RESET
-      or opts.move_cursor_after_remove
-      or opts.insert_after_remove
-    then
-      vim.api.nvim_win_set_cursor(0, {
-        end_row,
-        start_col,
-      })
-    end
-
-    if method == RESET or opts.insert_after_remove then
-      vim.cmd("startinsert")
-    end
+  if
+    method == RESET
+    or opts.move_cursor_after_remove
+    or opts.insert_after_remove
+  then
+    vim.api.nvim_win_set_cursor(0, {
+      end_row,
+      start_col,
+    })
   end
+
+  if method == RESET or opts.insert_after_remove then
+    vim.cmd("startinsert")
+  end
+end
 
 M.add_class = function()
   traverse_tree(ADD)
