@@ -30,7 +30,7 @@ end
 -- If the class attribute is not present, then add one.
 local traverse_tree = function(method)
   local bufnr = vim.api.nvim_get_current_buf()
-  local ft = vim.api.nvim_buf_get_option(bufnr, "ft")
+  local ft = vim.api.nvim_get_option_value("ft", { buf = bufnr })
 
   -- astro uses "class" insated of "classname"
   -- but the syntax is close to tsx
@@ -39,8 +39,9 @@ local traverse_tree = function(method)
 
   -- Check whether a parser for the language is installed
   local parser_lang = parsers.ft_to_lang(ft)
-  local installed =
-    vim.treesitter.language.require_language(parser_lang, nil, true)
+  -- local installed =
+  --   vim.treesitter.language.require_language(parser_lang, nil, true)
+  local installed = vim.treesitter.language.add(parser_lang)
 
   if not installed then
     vim.notify(
@@ -222,7 +223,7 @@ Add.new_attribute = function(
   local inject_str = ""
 
   -- use "class" if the filetype is astro
-  local ft = vim.api.nvim_buf_get_option(bufnr, "ft")
+  local ft = vim.api.nvim_get_option_value("ft", { buf = bufnr })
   if ft == "astro" then
     inject_str = [[ class=]] .. utils.get_quotes(0)
   else
