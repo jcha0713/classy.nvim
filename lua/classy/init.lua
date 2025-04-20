@@ -38,14 +38,12 @@ local traverse_tree = function(method)
   local is_astro = ft == "astro"
 
   -- Check whether a parser for the language is installed
-  local parser_lang = parsers.ft_to_lang(ft)
-  -- local installed =
-  --   vim.treesitter.language.require_language(parser_lang, nil, true)
-  local installed = vim.treesitter.language.add(parser_lang)
+  local lang = vim.treesitter.language.get_lang(ft)
+  local has_parser = utils.has_lang_parser(lang)
 
-  if not installed then
+  if not has_parser then
     vim.notify(
-      "No Treesitter parser was found for " .. parser_lang,
+      "No Treesitter parser was found for " .. lang,
       vim.log.levels.ERROR
     )
     return
@@ -64,7 +62,7 @@ local traverse_tree = function(method)
     cursor[2],
   }
 
-  local lang_tree = vim.treesitter.get_parser(bufnr, parser_lang)
+  local lang_tree = vim.treesitter.get_parser(bufnr, lang)
 
   -- get lang information of current position
   local current_tree = lang_tree:language_for_range(range)

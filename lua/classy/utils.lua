@@ -53,4 +53,12 @@ M.get_quotes = function(num)
   return quote .. spaces .. quote
 end
 
+M.has_lang_parser = function(lang)
+  if vim.fn.has("nvim-0.11") == 1 then
+    return vim.treesitter.language.add(lang)
+  else
+    return pcall(vim.treesitter.language.add, lang)
+  end
+end
+
 return M
